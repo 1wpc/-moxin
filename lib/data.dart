@@ -99,6 +99,16 @@ class Controller extends GetxController{
     }
   }
 
+  void reloadMsgs(String friendId){
+    messages.clear();
+    for (var i=messagebox.length-1; i>=0; i--) {
+      var msg =messagebox[i];
+      if (msg.author.id == friendId||msg.roomId == friendId){
+        addMsg(msg);
+      }
+    }
+  }
+
   void updateUser(types.User newUser){
     user = newUser;
     Global.preferences.setString("user", jsonEncode(user.toJson()));

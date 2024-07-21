@@ -5,14 +5,22 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 import 'package:get/get.dart';
 
-String clientId = "000";
+class ChatPage extends StatefulWidget{
+  late types.User user;
 
+  ChatPage({super.key, required this.user}){}
 
-class ChatPage extends StatelessWidget {
+  @override
+  State<StatefulWidget> createState(){
+    return ChatPageState(toUser: user);
+  }
+}
+
+class ChatPageState extends State<StatefulWidget> {
 
   final Controller c = Get.find();
 
-  ChatPage({super.key, required this.toUser}){
+  ChatPageState({required this.toUser}){
     _user = c.user;
   }
   types.User toUser;
