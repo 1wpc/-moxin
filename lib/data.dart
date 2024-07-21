@@ -1,12 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
-import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Global {
@@ -105,9 +102,7 @@ class Controller extends GetxController{
   void updateUser(types.User newUser){
     user = newUser;
     Global.preferences.setString("user", jsonEncode(user.toJson()));
-    if(Global.isConnect){
-      Global.sp.send("close");
-    }
+    Global.sp.send("close");
     Global.sp.send(user.id);
   }
 
@@ -120,7 +115,7 @@ class Controller extends GetxController{
           Global.sp = data;
           if (clientId != "null0"){
             print("id = $clientId");
-            //Global.sp.send(clientId);
+            Global.sp.send(clientId);
           }
           else {//待实现逻辑
             //c.changePage(2);
@@ -148,8 +143,6 @@ class Controller extends GetxController{
     }
     Global.isInit = true;
     EasyLoading.dismiss();
-    if (!Global.isConnect){
-      Global.sp.send(user.id);
-    }
+    Global.sp.send(user.id);
   }
 }

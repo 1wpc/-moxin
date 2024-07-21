@@ -6,26 +6,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_test/Loading.dart';
 import 'package:flutter_application_test/data.dart';
 import 'package:get/get.dart';
-import 'home.dart';
-import 'home.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 thread(sendPort)async{
-  var clientId = "000";
   var rp = ReceivePort();
   sendPort.send(rp.sendPort);
+  var clientId = "";
+  bool isconnect = false;
   print("connecting...");
-  late Socket socket;// = await Socket.connect("192.168.31.7", 8848);
+  late Socket socket;
   Future<void> receive()async {
     try{
       await for (var data in socket){
+        isconnect = true;
         sendPort.send(utf8.decode(data));
       }
     }catch(e){
       print("错误$e");
       socket.close();
-      Global.isConnect = false;
+      isconnect = false;
+    }
+  }
+  Future<void> connect()async{
+    try{
+      socket = await Socket.connect("192.168.45.184", 8848,timeout: Duration(seconds: 10));
+      isconnect = true;
+      socket.add(utf8.encode("$clientId\n"));
+      socket.flush();
+      receive();
+      print("connect sucess");
+    }catch(e){
+      print("错误$e");
+      isconnect = false;
     }
   }
   rp.listen((msg)async{
@@ -33,39 +45,34 @@ thread(sendPort)async{
       if (msg != "close"){
         clientId = msg;
         print("clientId=$clientId");
-        try{
-          socket = await Socket.connect("192.168.45.184", 8848);
-          print("connect sucess");
-          Global.isConnect = true;
-          socket.add(utf8.encode("$clientId\n"));
-          socket.flush();
-          receive();
-        }catch(e){
-          print("错误$e");
-          Global.isConnect = false;
+        if (!isconnect){
+          connect();
         }
       }else {
         socket.close();
-        Global.isConnect = false;
+        isconnect = false;
       }
     }
     else{
-      if (socket != null){
+      if (isconnect){
         socket.add(utf8.encode("${json.encode(msg)}\n"));
-      }else{
-        EasyLoading.showError("未连接服务器");
-      }//待实现逻辑
+      }
     }
   });
+  while (true){
+    await Future.delayed(Duration(seconds: 5));
+    if (!isconnect){
+      await connect();
+    }
+  }
   // await for (var data in socket){
   //   sendPort.send(utf8.decode(data));
   // }
 }
 
 startThread()async{
-    Isolate isolate;
     Global.rp = ReceivePort();
-    isolate = await Isolate.spawn(thread, Global.rp.sendPort);
+    await Isolate.spawn(thread, Global.rp.sendPort);
   }
 
 void main() {

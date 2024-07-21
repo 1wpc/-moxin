@@ -1,15 +1,9 @@
-import 'dart:convert';
-import 'dart:isolate';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_application_test/MsgCreator.dart';
 import 'package:flutter_application_test/data.dart';
 import 'package:flutter_application_test/explore.dart';
 import 'package:flutter_application_test/user.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'chat.dart';
 import 'contacts.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
@@ -66,9 +60,7 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
 
     }else if(state == AppLifecycleState.resumed){
       print("000应用进入前台 resumed");
-      if (!Global.isConnect){
-        Global.sp.send(c.user.id);
-      }
+      Global.sp.send(c.user.id);
 
     }else if(state == AppLifecycleState.inactive){
       // 应用进入非活动状态 , 如来了个电话 , 电话应用进入前台

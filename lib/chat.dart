@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_test/data.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 import 'package:get/get.dart';
 
@@ -59,18 +58,17 @@ class ChatPage extends StatelessWidget {
           messages: controller.messages,
           user: _user,
           onSendPressed: (types.PartialText message) {
-            if (Global.isConnect){
-              final textMessage = types.TextMessage(
-              author: _user,
-              createdAt: DateTime.now().millisecondsSinceEpoch,
-              id: randomString(),
-              text: message.text,
-              roomId: toUser.id
-              );
+            final textMessage = types.TextMessage(
+                author: _user,
+                createdAt: DateTime.now().millisecondsSinceEpoch,
+                id: randomString(),
+                text: message.text,
+                roomId: toUser.id
+            );
 
-              controller.addMsg(textMessage);
-              controller.addMsgBox(textMessage);
-              for (var i in controller.messageshow){
+            controller.addMsg(textMessage);
+            controller.addMsgBox(textMessage);
+            for (var i in controller.messageshow){
               if (i.author.id == toUser.id||i.roomId == toUser.id){
                 controller.messageshow.remove(i);
                 break;
@@ -78,9 +76,6 @@ class ChatPage extends StatelessWidget {
             }
             controller.addMsgShow(textMessage);
             Global.sp.send(textMessage.toJson());
-            }else{
-              EasyLoading.showError("未连接服务器", duration: Duration(seconds: 1));
-          }
         },
       )
     );
