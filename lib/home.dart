@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_test/MsgCreator.dart';
 import 'package:flutter_application_test/data.dart';
 import 'package:flutter_application_test/explore.dart';
 import 'package:flutter_application_test/user.dart';
@@ -102,21 +103,7 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
       body: pages[controller.currentIndex],
       floatingActionButton: FloatingActionButton(
         onPressed: (() {
-          // var simulatedMsg = types.TextMessage(//simulate message from srver
-          //   author: const types.User(id: "id10", firstName: "测试用户"),
-          //   id: randomString(), 
-          //   text: "这是一条模拟从服务器获取的测试消息${randomInt(5)}。"
-          //     );
-              
-          // controller.addMsgBox(simulatedMsg);
-          // var authorId = simulatedMsg.author.id;//friend id
-          // for (var i in controller.messageshow){
-          //   if (i.author.id == authorId||i.roomId == authorId){
-          //     controller.messageshow.remove(i);
-          //     break;
-          //   }
-          // }
-          // controller.addMsgShow(simulatedMsg);
+          Get.to(MsgCreator());
         } ),
         tooltip: 'Increment',
         child: const Icon(Icons.add),
