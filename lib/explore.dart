@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_test/chat.dart';
 import 'package:flutter_application_test/data.dart';
 import 'package:get/get.dart';
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 class Explore extends StatelessWidget{
   @override
@@ -28,7 +29,7 @@ class Explore extends StatelessWidget{
                   }
                 }
                 
-                Get.to(ChatPage(roomId: friendId));
+                Get.to(ChatPage(toUser: types.User(id: friendId, firstName: "待实现逻辑"),));
               },
               title: Text(friendName),
               subtitle: Text(controller.messageshow[index].text),
