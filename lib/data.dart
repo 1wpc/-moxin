@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class Global {
   static bool isInit = false;
   static bool isConnect = false;
+  static Map<String, dynamic> contacts = {};
   static late NotificationUtility notif;
   static late SendPort sp;
   static late ReceivePort rp;
@@ -19,7 +20,17 @@ class Global {
     var user = preferences.getString("user") == null ?
     types.User(id: "null0", firstName: "null0",) :
     types.User.fromJson(jsonDecode(preferences.getString("user")!));
+    var contact_data = preferences.getString("contacts")?? "";
+    if (contact_data != ""){
+      contacts = jsonDecode(contact_data);
+    }
+    isInit = true;
     return user;
+  }
+  static Future<void> save()async{
+    if (contacts.isNotEmpty){
+      await preferences.setString("contacts", jsonEncode(contacts));
+    }
   }
   //static late File file_user;
 
@@ -28,10 +39,6 @@ class Global {
 
     //return directory.path;
   //}
-
-  static void initFile(){
-    //file_user = File('${_localPath}/user.json');
-  }
 }
 
 String randomString() {
@@ -53,25 +60,9 @@ class Controller extends GetxController{
     //user = content != null ? types.User.fromJson(jsonDecode(content)) : types.User(id: "null", firstName: "null",);
     //user = types.User(id: "null", firstName: "null",);
   }
-  List<types.TextMessage> messagebox = [
-    types.TextMessage(
-      author: const types.User(id: "idtestuser1", firstName: "本地测试用户1",),
-      createdAt: DateTime.now().microsecondsSinceEpoch,
-      id: randomString(),
-      text: "你好，我是本地测试用户1",
-      roomId: "idtestuser2"
-    ),
-  ].obs.cast<types.TextMessage>();
+  List<types.TextMessage> messagebox = [].obs.cast<types.TextMessage>();
   List<types.TextMessage> messages = [].obs.cast<types.TextMessage>();
-  List<types.TextMessage> messageshow = [
-    types.TextMessage(
-      author: const types.User(id: "idtestuser1", firstName: "本地测试用户1",),
-      createdAt: DateTime.now().microsecondsSinceEpoch,
-      id: randomString(),
-      text: "你好，我是本地测试用户1",
-      roomId: "idtestuser2"
-    ),
-  ].obs.cast<types.TextMessage>();
+  List<types.TextMessage> messageshow = [].obs.cast<types.TextMessage>();
 
   late types.User user;
 
@@ -119,9 +110,9 @@ class Controller extends GetxController{
   }
 
   void initUser()async{
-    user = await Global.init();
-    var clientId = user.id;
     if (!Global.isInit) {
+      user = await Global.init();
+      var clientId = user.id;
       Global.rp.listen((data){
         if(data is SendPort){
           Global.sp = data;
@@ -139,6 +130,9 @@ class Controller extends GetxController{
           Global.notif.showNotification(title: msg.author.firstName.toString(), body: msg.text);
           addMsgBox(msg);
           var authorId = msg.author.id;//friend id
+          if (Global.contacts[authorId] == null){
+            Global.contacts[authorId] = msg.author;
+          }
           for (var i in messageshow){
             if (i.author.id == authorId||i.roomId == authorId){
               messageshow.remove(i);

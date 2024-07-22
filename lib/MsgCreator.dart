@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_test/chat.dart';
@@ -65,8 +67,10 @@ class MsgCreatorState extends State<StatefulWidget>{
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('创建中...'), duration: Durations.short1,),
                           );
-                          controller.reloadMsgs(_useridController.text);
-                          Get.off(ChatPage(user: types.User(id: _useridController.text, firstName: _remarkController.text),));
+                          var user = types.User(id: _useridController.text, firstName: _remarkController.text);
+                          Global.contacts[user.id] = user;
+                          controller.reloadMsgs(user.id);
+                          Get.off(ChatPage(user:user));
                         }
                       },
                       child: Text('确认新建'),

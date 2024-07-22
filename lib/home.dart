@@ -57,6 +57,7 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
 
     if(state == AppLifecycleState.paused){
       print("000应用进入后台 paused");
+      Global.save();
 
     }else if(state == AppLifecycleState.resumed){
       print("000应用进入前台 resumed");

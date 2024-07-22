@@ -17,12 +17,12 @@ class Explore extends StatelessWidget{
             var slectedAuthorName = msg.author.firstName.toString();
             var slectedAuthorId = msg.author.id;
             bool isMyMsg = slectedAuthorId == controller.user.id;
-            var friendName = isMyMsg ? msg.roomId.toString() : slectedAuthorName;
+            var friendName = isMyMsg ? Global.contacts[msg.roomId.toString()]!.firstName.toString() : slectedAuthorName;
             var friendId = isMyMsg ? msg.roomId.toString() : slectedAuthorId;
             return ListTile(
               onTap: () {
                 controller.reloadMsgs(friendId);
-                Get.to(ChatPage(user: types.User(id: friendId, firstName: "待实现逻辑"),));
+                Get.to(ChatPage(user: types.User(id: friendId, firstName: friendName),));
               },
               title: Text(friendName),
               subtitle: Text(controller.messageshow[index].text),
