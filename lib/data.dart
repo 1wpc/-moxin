@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:isolate';
 import 'dart:math';
+import 'package:flutter_application_test/NotificationUtility.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
@@ -9,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class Global {
   static bool isInit = false;
   static bool isConnect = false;
+  static late NotificationUtility notif;
   static late SendPort sp;
   static late ReceivePort rp;
   static late SharedPreferences preferences;
@@ -134,6 +136,7 @@ class Controller extends GetxController{
           print("receive sp");
         }else{
           var msg = types.TextMessage.fromJson(json.decode(data));
+          Global.notif.showNotification(title: msg.author.firstName.toString(), body: msg.text);
           addMsgBox(msg);
           var authorId = msg.author.id;//friend id
           for (var i in messageshow){

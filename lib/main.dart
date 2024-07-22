@@ -4,6 +4,7 @@ import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_application_test/Loading.dart';
+import 'package:flutter_application_test/NotificationUtility.dart';
 import 'package:flutter_application_test/data.dart';
 import 'package:get/get.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -29,7 +30,7 @@ thread(sendPort)async{
   }
   Future<void> connect()async{
     try{
-      socket = await Socket.connect("192.168.45.184", 8848,timeout: Duration(seconds: 10));
+      socket = await Socket.connect("192.168.31.7", 8848,timeout: Duration(seconds: 10));
       isconnect = true;
       socket.add(utf8.encode("$clientId\n"));
       socket.flush();
@@ -45,7 +46,7 @@ thread(sendPort)async{
       if (msg != "close"){
         clientId = msg;
         print("clientId=$clientId");
-        if (!isconnect){
+        if (!isconnect && clientId != "null0"){
           connect();
         }
       }else {
@@ -61,7 +62,7 @@ thread(sendPort)async{
   });
   while (true){
     await Future.delayed(Duration(seconds: 5));
-    if (!isconnect){
+    if (!isconnect && clientId != "null0"){
       await connect();
     }
   }
@@ -75,8 +76,11 @@ startThread()async{
     await Isolate.spawn(thread, Global.rp.sendPort);
   }
 
-void main() {
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
   startThread();
+  Global.notif = NotificationUtility();
+  await Global.notif.initialize();
   runApp(const MyApp());
 }
 
