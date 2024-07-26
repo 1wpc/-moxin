@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:isolate';
 import 'dart:math';
+import 'package:flutter_application_test/MessageProvider.dart';
 import 'package:flutter_application_test/NotificationUtility.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -10,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class Global {
   static bool isInit = false;
   static bool isConnect = false;
+  static MessageProvider messageProvider = MessageProvider();
   static Map<String, dynamic> contacts = {};
   static late NotificationUtility notif;
   static late SendPort sp;
@@ -24,6 +26,7 @@ class Global {
     if (contact_data != ""){
       contacts = jsonDecode(contact_data);
     }
+    //messageProvider.open();
     isInit = true;
     return user;
   }
@@ -70,8 +73,12 @@ class Controller extends GetxController{
 
   List<types.Message> get msgs => messages;
 
-  void addMsg(types.TextMessage msg){
-    messages.insert(0, msg);
+  void addMsg(types.TextMessage msg, {bool order = true}){
+    if (order){
+      messages.insert(0, msg);
+    }else{
+      messages.add(msg);
+    }
     update();
   }
 
@@ -109,7 +116,7 @@ class Controller extends GetxController{
     Global.sp.send(user.id);
   }
 
-  void initUser()async{
+  Future initUser()async{
     if (!Global.isInit) {
       user = await Global.init();
       var clientId = user.id;
@@ -120,8 +127,7 @@ class Controller extends GetxController{
             print("id = $clientId");
             Global.sp.send(clientId);
           }
-          else {//待实现逻辑
-            //c.changePage(2);
+          else {
             EasyLoading.showInfo("请注册");
           }
           print("receive sp");
@@ -131,7 +137,7 @@ class Controller extends GetxController{
           addMsgBox(msg);
           var authorId = msg.author.id;//friend id
           if (Global.contacts[authorId] == null){
-            Global.contacts[authorId] = msg.author;
+            Global.contacts[authorId] = msg.author.toJson();
           }
           for (var i in messageshow){
             if (i.author.id == authorId||i.roomId == authorId){
@@ -145,11 +151,11 @@ class Controller extends GetxController{
               addMsg(msg);
             }
           }
+          Global.messageProvider.insert(msg);
         }
       });
     }
     Global.isInit = true;
-    EasyLoading.dismiss();
-    Global.sp.send(user.id);
+    //Global.sp.send(user.id);
   }
 }

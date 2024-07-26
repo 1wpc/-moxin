@@ -17,7 +17,7 @@ class Explore extends StatelessWidget{
             var slectedAuthorName = msg.author.firstName.toString();
             var slectedAuthorId = msg.author.id;
             bool isMyMsg = slectedAuthorId == controller.user.id;
-            var friendName = isMyMsg ? Global.contacts[msg.roomId.toString()]!.firstName.toString() : slectedAuthorName;
+            var friendName = isMyMsg ? Global.contacts[msg.roomId.toString()]!["firstName"] : slectedAuthorName;
             var friendId = isMyMsg ? msg.roomId.toString() : slectedAuthorId;
             return ListTile(
               onTap: () {

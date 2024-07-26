@@ -68,7 +68,7 @@ class MsgCreatorState extends State<StatefulWidget>{
                             SnackBar(content: Text('创建中...'), duration: Durations.short1,),
                           );
                           var user = types.User(id: _useridController.text, firstName: _remarkController.text);
-                          Global.contacts[user.id] = user;
+                          Global.contacts[user.id] = user.toJson();
                           controller.reloadMsgs(user.id);
                           Get.off(ChatPage(user:user));
                         }

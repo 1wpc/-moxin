@@ -36,12 +36,14 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.6
   flutter_chat_ui: ^1.6.14
-  provider: ^6.0.5
+  path: ^1.8.0
+  permission_handler: ^9.0.2
   get: ^4.6.6
   flutter_easyloading: ^3.0.5
-
+  sqflite: ^2.3.3+1
   flutter_chat_types: any
   flutter_local_notifications: ^17.2.1+2
+  flutter_foreground_task: ^8.0.0
   path_provider: ^2.1.3
   shared_preferences: ^2.2.3
 dev_dependencies:

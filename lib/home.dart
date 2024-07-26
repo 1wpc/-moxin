@@ -1,11 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_application_test/MsgCreator.dart';
 import 'package:flutter_application_test/data.dart';
 import 'package:flutter_application_test/explore.dart';
 import 'package:flutter_application_test/user.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:get/get.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'contacts.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+
+import 'main.dart';
 
 class MyHomePage extends StatefulWidget{
   @override
@@ -36,17 +42,106 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
       )
   ];
 
+  Future<void> _requestPermissions() async {
+    if (Platform.isAndroid) {
+      await Permission.storage.request();
+      // "android.permission.SYSTEM_ALERT_WINDOW" permission must be granted for
+      // onNotificationPressed function to be called.
+      //
+      // When the notification is pressed while permission is denied,
+      // the onNotificationPressed function is not called and the app opens.
+      //
+      // If you do not use the onNotificationPressed or launchApp function,
+      // you do not need to write this code.
+      // if (!await FlutterForegroundTask.canDrawOverlays) {
+      //   // This function requires `android.permission.SYSTEM_ALERT_WINDOW` permission.
+      //   await FlutterForegroundTask.openSystemAlertWindowSettings();
+      // }
+
+      // Android 12 or higher, there are restrictions on starting a foreground service.
+      //
+      // To restart the service on device reboot or unexpected problem, you need to allow below permission.
+      if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
+        // This function requires `android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission.
+        await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+      }
+
+      // Android 13 and higher, you need to allow notification permission to expose foreground service notification.
+      final NotificationPermission notificationPermissionStatus =
+      await FlutterForegroundTask.checkNotificationPermission();
+      if (notificationPermissionStatus != NotificationPermission.granted) {
+        await FlutterForegroundTask.requestNotificationPermission();
+      }
+    }
+  }
+
+  Future<void> _initService() async {
+    FlutterForegroundTask.init(
+      androidNotificationOptions: AndroidNotificationOptions(
+        channelId: 'foreground_service',
+        channelName: 'Foreground Service Notification',
+        channelDescription:
+        'This notification appears when the foreground service is running.',
+        channelImportance: NotificationChannelImportance.LOW,
+        priority: NotificationPriority.LOW,
+      ),
+      iosNotificationOptions: const IOSNotificationOptions(
+        showNotification: false,
+        playSound: false,
+      ),
+      foregroundTaskOptions: const ForegroundTaskOptions(
+        interval: 5000,
+        isOnceEvent: false,
+        autoRunOnBoot: true,
+        autoRunOnMyPackageReplaced: true,
+        allowWakeLock: true,
+        allowWifiLock: true,
+      ),
+    );
+  }
+
+  Future<ServiceRequestResult> _startService() async {
+    if (await FlutterForegroundTask.isRunningService) {
+      return FlutterForegroundTask.restartService();
+    } else {
+      return FlutterForegroundTask.startService(
+        notificationTitle: 'Foreground Service is running',
+        notificationText: 'Tap to return to the app',
+        notificationIcon: null,
+        notificationButtons: [
+          const NotificationButton(id: 'btn_hello', text: 'hello'),
+        ],
+        callback: startCallback,
+      );
+    }
+  }
+
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
     //Global.init();
     //init();
     super.initState();
+    FlutterForegroundTask.addTaskDataCallback(_onReceiveTaskData);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Request permissions and initialize the service.
+      _requestPermissions();
+      _initService();
+      _startService();
+    });
+  }
+
+  void _onReceiveTaskData(dynamic data) {
+    if (data is int) {
+      print('count: $data');
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    FlutterForegroundTask.removeTaskDataCallback(_onReceiveTaskData);
     super.dispose();
   }
 
@@ -85,7 +180,7 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
         return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text("墨"),
+        title: const Text("墨信"),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: bnItems,

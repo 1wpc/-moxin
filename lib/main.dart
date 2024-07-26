@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_test/Loading.dart';
 import 'package:flutter_application_test/NotificationUtility.dart';
 import 'package:flutter_application_test/data.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:get/get.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
@@ -50,7 +51,9 @@ thread(sendPort)async{
           connect();
         }
       }else {
-        socket.close();
+        if(socket != null){
+          socket.close();
+        }
         isconnect = false;
       }
     }
@@ -74,13 +77,20 @@ thread(sendPort)async{
 startThread()async{
     Global.rp = ReceivePort();
     await Isolate.spawn(thread, Global.rp.sendPort);
-  }
+}
+
+@pragma('vm:entry-point')
+void startCallback() {
+  // The setTaskHandler function must be called to handle the task in the background.
+  FlutterForegroundTask.setTaskHandler(MyTaskHandler());
+}
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   startThread();
   Global.notif = NotificationUtility();
   await Global.notif.initialize();
+  FlutterForegroundTask.initCommunicationPort();
   runApp(const MyApp());
 }
 
@@ -114,5 +124,61 @@ class MyApp extends StatelessWidget {
       ),
       home: Loading(),
     );
+  }
+}
+
+class MyTaskHandler extends TaskHandler {
+  int _count = 0;
+
+  // Called when the task is started.
+  @override
+  void onStart(DateTime timestamp) {
+    print('onStart');
+  }
+
+  // Called every [ForegroundTaskOptions.interval] milliseconds.
+  @override
+  void onRepeatEvent(DateTime timestamp) {
+    FlutterForegroundTask.updateService(notificationText: 'count: $_count');
+
+    // Send data to main isolate.
+    FlutterForegroundTask.sendDataToMain(_count);
+
+    _count++;
+  }
+
+  // Called when the task is destroyed.
+  @override
+  void onDestroy(DateTime timestamp) {
+    print('onDestroy');
+  }
+
+  // Called when data is sent using [FlutterForegroundTask.sendDataToTask].
+  @override
+  void onReceiveData(Object data) {
+    print('onReceiveData: $data');
+  }
+
+  // Called when the notification button on the Android platform is pressed.
+  @override
+  void onNotificationButtonPressed(String id) {
+    print('onNotificationButtonPressed: $id');
+  }
+
+  // Called when the notification itself on the Android platform is pressed.
+  //
+  // "android.permission.SYSTEM_ALERT_WINDOW" permission must be granted for
+  // this function to be called.
+  @override
+  void onNotificationPressed() {
+    FlutterForegroundTask.launchApp('/');
+    print('onNotificationPressed');
+  }
+
+  // Called when the notification itself on the Android platform is dismissed
+  // on Android 14 which allow this behaviour.
+  @override
+  void onNotificationDismissed() {
+    print('onNotificationDismissed');
   }
 }
