@@ -41,10 +41,16 @@ class LoadingState extends State<StatefulWidget>{
       if (category.isNotEmpty){
         var readonly_msg_map = Global.messageProvider.cursor.current;
         var author_id = readonly_msg_map['author_id'];
+        var friend_id = readonly_msg_map['roomId'];
+        var msg = Map<String, dynamic>.from(readonly_msg_map)..remove("author_id");
         if (category[author_id] != null){
-          var msg = Map<String, dynamic>.from(readonly_msg_map)..remove("author_id");
           msg["author"] = category[author_id];
           category.remove(author_id);
+          c.addMsgShow(types.TextMessage.fromJson(msg));
+          break;
+        }else if (category[friend_id] != null){
+          msg["author"] = c.user.toJson();
+          category.remove(friend_id);
           c.addMsgShow(types.TextMessage.fromJson(msg));
           break;
         }
