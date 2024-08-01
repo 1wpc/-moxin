@@ -25,7 +25,7 @@
 
 
     <application
-        android:label="flutter_application_test"
+        android:label="墨信"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity
