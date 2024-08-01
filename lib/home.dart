@@ -156,7 +156,7 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
 
     }else if(state == AppLifecycleState.resumed){
       print("000应用进入前台 resumed");
-      Global.sp.send(c.user.id);
+      Global.sp.send(Global.wrapper("verify_user", user: c.user));
 
     }else if(state == AppLifecycleState.inactive){
       // 应用进入非活动状态 , 如来了个电话 , 电话应用进入前台

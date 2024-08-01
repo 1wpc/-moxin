@@ -9,10 +9,12 @@ import 'package:flutter_application_test/data.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:get/get.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 thread(sendPort)async{
   var rp = ReceivePort();
   sendPort.send(rp.sendPort);
+  types.User user = types.User(id: "null0");
   var clientId = "";
   bool isconnect = false;
   print("connecting...");
@@ -29,11 +31,11 @@ thread(sendPort)async{
       isconnect = false;
     }
   }
-  Future<void> connect()async{
+  Future<void> connect(Map<String, dynamic> data)async{
     try{
-      socket = await Socket.connect("192.168.31.7", 8848,timeout: Duration(seconds: 10));
+      socket = await Socket.connect("192.168.43.234", 8848,timeout: Duration(seconds: 10));
       isconnect = true;
-      socket.add(utf8.encode("$clientId\n"));
+      socket.add(utf8.encode("${json.encode(data)}\n"));
       socket.flush();
       receive();
       print("connect sucess");
@@ -45,11 +47,6 @@ thread(sendPort)async{
   rp.listen((msg)async{
     if(msg is String){
       if (msg != "close"){
-        clientId = msg;
-        print("clientId=$clientId");
-        if (!isconnect && clientId != "null0"){
-          connect();
-        }
       }else {
         if(socket != null){
           socket.close();
@@ -58,15 +55,29 @@ thread(sendPort)async{
       }
     }
     else{
-      if (isconnect){
-        socket.add(utf8.encode("${json.encode(msg)}\n"));
+      if (msg["cmd"] == "send_msg"){
+        if (isconnect){
+          socket.add(utf8.encode("${json.encode(msg["data"])}\n"));
+        }
+      }else if (msg["cmd"] == "init_user" || msg["cmd"] == "verify_user"){
+        var user_map = msg["data"];
+        user = types.User.fromJson(user_map);
+        clientId = user_map["id"];
+        print("clientId=$clientId");
+        if (!isconnect && clientId != "null0"){
+          connect(msg);
+        }
+      }else if (msg["cmd"] == "get_public_key"){
+        if (isconnect){
+          socket.add(utf8.encode("${json.encode(msg)}\n"));
+        }
       }
     }
   });
   while (true){
     await Future.delayed(Duration(seconds: 5));
     if (!isconnect && clientId != "null0"){
-      await connect();
+      await connect(Global.wrapper("verify_user", user: user));
     }
   }
   // await for (var data in socket){

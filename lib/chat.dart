@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_test/MessageProvider.dart';
 import 'package:flutter_application_test/data.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
@@ -22,7 +21,7 @@ class ChatPageState extends State<StatefulWidget> {
   final Controller c = Get.find();
 
   ChatPageState({required this.toUser}){
-    _user = c.user;
+    _user = c.userProcessor(c.user);
   }
   types.User toUser;
   late types.User _user;
@@ -38,6 +37,7 @@ class ChatPageState extends State<StatefulWidget> {
         }else{
           msg_map["author"] = toUser.toJson();
         }
+        msg_map.remove("metadata");
         c.addMsg(types.TextMessage.fromJson(msg_map), order: false);
       }else{
         break;
@@ -46,12 +46,15 @@ class ChatPageState extends State<StatefulWidget> {
   }
   
   @override
-  void dispose() { 
+  void dispose() {
+    Global.currentContactId = "";
     Global.messageProvider.cursor.close();
     super.dispose(); 
   }
 
   void init()async{
+    Global.currentContactId = c.user.id;
+    Global.sp.send({"cmd": "get_public_key", "data": toUser.id});
     await Global.messageProvider.initCursorForPerson(toUser.id);
     if (c.messages.length<16){
       loadMessages();
@@ -81,13 +84,13 @@ class ChatPageState extends State<StatefulWidget> {
             user: _user,
             onSendPressed: (types.PartialText message) {
               final textMessage = types.TextMessage(
-                author: _user,
-                createdAt: DateTime.now().millisecondsSinceEpoch,
                 id: randomString(),
+                createdAt: DateTime.now().millisecondsSinceEpoch,
+                author: controller.userProcessor(_user),
                 text: message.text,
-                roomId: toUser.id
+                roomId: toUser.id,
               );
-
+              final encryptTextmessage = Global.messageConstructor(textMessage, message.text, toUser.id);
               controller.addMsg(textMessage);
               controller.addMsgBox(textMessage);
               for (var i in controller.messageshow){
@@ -98,7 +101,7 @@ class ChatPageState extends State<StatefulWidget> {
               }
               controller.addMsgShow(textMessage);
               Global.messageProvider.insert(textMessage);
-              Global.sp.send(textMessage.toJson());
+              Global.sp.send(Global.wrapper("send_msg", message: encryptTextmessage));
         },
       )
     );

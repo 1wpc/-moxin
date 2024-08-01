@@ -21,7 +21,8 @@ class Explore extends StatelessWidget{
             var friendId = isMyMsg ? msg.roomId.toString() : slectedAuthorId;
             return ListTile(
               onTap: () {
-                controller.reloadMsgs(friendId);
+                //controller.reloadMsgs(friendId);
+                controller.messages.clear();
                 Get.to(ChatPage(user: types.User(id: friendId, firstName: friendName),));
               },
               title: Text(friendName),

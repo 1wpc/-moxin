@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_test/chat.dart';
@@ -65,7 +63,7 @@ class MsgCreatorState extends State<StatefulWidget>{
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('创建中...'), duration: Durations.short1,),
+                            SnackBar(content: Text('创建中...'), duration: Duration(seconds: 1),),
                           );
                           var user = types.User(id: _useridController.text, firstName: _remarkController.text);
                           Global.contacts[user.id] = user.toJson();

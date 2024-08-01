@@ -50,4 +50,8 @@ class MessageProvider{
   }
 
   Future close() async => db.close();
+
+  Future deleteAll()async{
+    await db.execute('DELETE FROM Messages1');
+  }
 }
