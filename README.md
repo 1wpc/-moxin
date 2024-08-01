@@ -16,8 +16,8 @@
 
 ## 实现方式
 
-![3](assets\img\3.jpg)
+![3](assets/img/3.jpg)
 
-![1](assets\img\1.jpg)
+![1](assets/img/1.jpg)
 
-![2](assets\img\2.jpg)
+![2](assets/img/2.jpg)
