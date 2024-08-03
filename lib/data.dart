@@ -7,6 +7,7 @@ import 'package:flutter_application_test/NotificationUtility.dart';
 import 'package:flutter_application_test/SignUp.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -158,8 +159,8 @@ class Controller extends GetxController{
     Global.messageProvider.deleteAll();
     Global.preferences.remove("contacts");
     Global.contacts.clear();
-    Global.sp.send("close");
-    Global.sp.send(Global.wrapper(cmd, user: user));
+    FlutterForegroundTask.sendDataToTask("close");
+    FlutterForegroundTask.sendDataToTask(Global.wrapper(cmd, user: user));
   }
 
   types.User userProcessor(types.User user){
@@ -181,69 +182,70 @@ class Controller extends GetxController{
       user = await Global.init();
       friends = Global.contacts.values.toList(growable: true).cast<Map<String, dynamic>>();
       var clientId = user.id;
-      Global.rp.listen((data){
-        if(data is SendPort){
-          Global.sp = data;
-          if (clientId != "null0"){
-            print("id = $clientId");
-            Global.sp.send(Global.wrapper("verify_user", user: user));
-          }
-          else {
-            EasyLoading.showInfo("请注册");
-            Get.to(SignUp());
-          }
-          print("receive sp");
-        }else{
-          var data_map = json.decode(data);
-          if(data_map["info"] == "normal"){
-            var content = jsonDecode(data_map["data"]);
-            if (content["metadata"]["isEncrypted"] == true){
-              var userName = content["author"]["firstName"];
-              content["author"]["firstName"] = SM2.decrypt(userName, Global.privateKey);
-              content["text"] = SM2.decrypt(content["text"], Global.privateKey);
-              content.remove("metadata");
-            }
-            var msg = types.TextMessage.fromJson(content);
-            Global.notif.showNotification(title: msg.author.firstName.toString(), body: msg.text);
-            addMsgBox(msg);
-            var authorId = msg.author.id;//friend id
-            if (Global.contacts[authorId] == null){
-              Global.contacts[authorId] = msg.author.toJson();
-            }
-            for (var i in messageshow){
-              if (i.author.id == authorId||i.roomId == authorId){
-                messageshow.remove(i);
-                break;
-              }
-            }
-            addMsgShow(msg);
-            if (messages.isNotEmpty){
-              if (messages[0].author.id == authorId||messages[0].roomId == authorId){
-                addMsg(msg);
-              }
-            }
-            // if (authorId == Global.currentContactId){
-            //   addMsg(msg);
-            // }
-            Global.messageProvider.insert(msg);
-          }else if (data_map["info"] == "success_verify"){
-            EasyLoading.showSuccess("登录成功");
-          }else if (data_map["info"] == "success_init"){
-            EasyLoading.showSuccess("注册成功");
-          }else if (data_map["info"] == "error_pw"){
-            EasyLoading.showError("密码错误");
-          }else if (data_map["info"] == "error_null_user"){
-            EasyLoading.showError("用户不存在");
-          }else if (data_map["info"] == "error_user_repeat"){
-            EasyLoading.showError("用户已存在");
-          }else if (data_map["info"] == "public_key"){
-            var publicKey = data_map["return"];
-            var id = data_map["extra"];
-            Global.contacts[id]["metadata"] = {"publicKey": publicKey};
-            Global.save();
-          }
-        }
-      });
+      FlutterForegroundTask.sendDataToTask(Global.wrapper("verify_user", user: user));
+      // Global.rp.listen((data){
+      //   if(data is SendPort){
+      //     Global.sp = data;
+      //     if (clientId != "null0"){
+      //       print("id = $clientId");
+      //       Global.sp.send(Global.wrapper("verify_user", user: user));
+      //     }
+      //     else {
+      //       EasyLoading.showInfo("请注册");
+      //       Get.to(SignUp());
+      //     }
+      //     print("receive sp");
+      //   }else{
+      //     var data_map = json.decode(data);
+      //     if(data_map["info"] == "normal"){
+      //       var content = jsonDecode(data_map["data"]);
+      //       if (content["metadata"]["isEncrypted"] == true){
+      //         var userName = content["author"]["firstName"];
+      //         content["author"]["firstName"] = SM2.decrypt(userName, Global.privateKey);
+      //         content["text"] = SM2.decrypt(content["text"], Global.privateKey);
+      //         content.remove("metadata");
+      //       }
+      //       var msg = types.TextMessage.fromJson(content);
+      //       Global.notif.showNotification(title: msg.author.firstName.toString(), body: msg.text);
+      //       addMsgBox(msg);
+      //       var authorId = msg.author.id;//friend id
+      //       if (Global.contacts[authorId] == null){
+      //         Global.contacts[authorId] = msg.author.toJson();
+      //       }
+      //       for (var i in messageshow){
+      //         if (i.author.id == authorId||i.roomId == authorId){
+      //           messageshow.remove(i);
+      //           break;
+      //         }
+      //       }
+      //       addMsgShow(msg);
+      //       if (messages.isNotEmpty){
+      //         if (messages[0].author.id == authorId||messages[0].roomId == authorId){
+      //           addMsg(msg);
+      //         }
+      //       }
+      //       // if (authorId == Global.currentContactId){
+      //       //   addMsg(msg);
+      //       // }
+      //       Global.messageProvider.insert(msg);
+      //     }else if (data_map["info"] == "success_verify"){
+      //       EasyLoading.showSuccess("登录成功");
+      //     }else if (data_map["info"] == "success_init"){
+      //       EasyLoading.showSuccess("注册成功");
+      //     }else if (data_map["info"] == "error_pw"){
+      //       EasyLoading.showError("密码错误");
+      //     }else if (data_map["info"] == "error_null_user"){
+      //       EasyLoading.showError("用户不存在");
+      //     }else if (data_map["info"] == "error_user_repeat"){
+      //       EasyLoading.showError("用户已存在");
+      //     }else if (data_map["info"] == "public_key"){
+      //       var publicKey = data_map["return"];
+      //       var id = data_map["extra"];
+      //       Global.contacts[id]["metadata"] = {"publicKey": publicKey};
+      //       Global.save();
+      //     }
+      //   }
+      // });
     }
     Global.isInit = true;
     //Global.sp.send(user.id);

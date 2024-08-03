@@ -47,12 +47,10 @@ class LoadingState extends State<StatefulWidget>{
           msg["author"] = category[author_id];
           category.remove(author_id);
           c.addMsgShow(types.TextMessage.fromJson(msg));
-          break;
         }else if (category[friend_id] != null){
           msg["author"] = c.userProcessor(c.user).toJson();
           category.remove(friend_id);
           c.addMsgShow(types.TextMessage.fromJson(msg));
-          break;
         }
       }else{
         break;
@@ -61,16 +59,18 @@ class LoadingState extends State<StatefulWidget>{
     Global.messageProvider.cursor.close();
   }
 
-  void init()async{
+  Future init()async{
     configLoading();
-    EasyLoading.addStatusCallback((status){
-      if (status == EasyLoadingStatus.dismiss){
-        Get.off(MyHomePage());
-      }
-    });
     await c.initUser();
     await getMsgShow();
-    EasyLoading.dismiss();
+    EasyLoading.addStatusCallback((status) async {
+      if (status == EasyLoadingStatus.dismiss){
+        await Future.delayed(Duration(milliseconds: 800), (){
+          Get.off(MyHomePage());
+        });
+      }
+    });
+    await EasyLoading.dismiss();
   }
 
   @override

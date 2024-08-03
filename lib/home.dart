@@ -1,13 +1,17 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:dart_sm/dart_sm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_test/MsgCreator.dart';
 import 'package:flutter_application_test/data.dart';
 import 'package:flutter_application_test/explore.dart';
 import 'package:flutter_application_test/user.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'SignUp.dart';
 import 'contacts.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
@@ -100,12 +104,12 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
     );
   }
 
-  Future<ServiceRequestResult> _startService() async {
+  Future<ServiceRequestResult?> _startService() async {
     if (await FlutterForegroundTask.isRunningService) {
-      return FlutterForegroundTask.restartService();
+      return null;
     } else {
       return FlutterForegroundTask.startService(
-        notificationTitle: 'Foreground Service is running',
+        notificationTitle: '后台保护',
         notificationText: 'Tap to return to the app',
         notificationIcon: null,
         notificationButtons: [
@@ -119,9 +123,10 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
-    //Global.init();
-    //init();
     super.initState();
+    if (c.user.id == "null0"){
+      EasyLoading.showInfo("请注册");
+    }
     FlutterForegroundTask.addTaskDataCallback(_onReceiveTaskData);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -133,15 +138,63 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
   }
 
   void _onReceiveTaskData(dynamic data) {
-    if (data is int) {
-      print('count: $data');
+    var data_map = json.decode(data);
+    if(data_map["info"] == "normal"){
+      var content = jsonDecode(data_map["data"]);
+      if (content["metadata"]["isEncrypted"] == true){
+        var userName = content["author"]["firstName"];
+        content["author"]["firstName"] = SM2.decrypt(userName, Global.privateKey);
+        content["text"] = SM2.decrypt(content["text"], Global.privateKey);
+        content.remove("metadata");
+      }
+      var msg = types.TextMessage.fromJson(content);
+      Global.notif.showNotification(title: msg.author.firstName.toString(), body: msg.text);
+      c.addMsgBox(msg);
+      var authorId = msg.author.id;//friend id
+      if (Global.contacts[authorId] == null){
+        Global.contacts[authorId] = msg.author.toJson();
+      }
+      for (var i in c.messageshow){
+        if (i.author.id == authorId||i.roomId == authorId){
+          c.messageshow.remove(i);
+          break;
+        }
+      }
+      c.addMsgShow(msg);
+      if (c.messages.isNotEmpty){
+        if (c.messages[0].author.id == authorId||c.messages[0].roomId == authorId){
+          var isExist = false;
+          c.messages.forEach((v){
+            if (v == msg){isExist = true;}
+          });
+          if (!isExist){c.addMsg(msg);}
+        }
+      }
+      // if (authorId == Global.currentContactId){
+      //   addMsg(msg);
+      // }
+      Global.messageProvider.insert(msg);
+    }else if (data_map["info"] == "success_verify"){
+      EasyLoading.showSuccess("登录成功");
+    }else if (data_map["info"] == "success_init"){
+      EasyLoading.showSuccess("注册成功");
+    }else if (data_map["info"] == "error_pw"){
+      EasyLoading.showError("密码错误");
+    }else if (data_map["info"] == "error_null_user"){
+      EasyLoading.showError("用户不存在");
+    }else if (data_map["info"] == "error_user_repeat"){
+      EasyLoading.showError("用户已存在");
+    }else if (data_map["info"] == "public_key"){
+      var publicKey = data_map["return"];
+      var id = data_map["extra"];
+      Global.contacts[id]["metadata"] = {"publicKey": publicKey};
+      Global.save();
     }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    FlutterForegroundTask.removeTaskDataCallback(_onReceiveTaskData);
     super.dispose();
   }
 
@@ -156,7 +209,7 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
 
     }else if(state == AppLifecycleState.resumed){
       print("000应用进入前台 resumed");
-      Global.sp.send(Global.wrapper("verify_user", user: c.user));
+      FlutterForegroundTask.sendDataToTask(Global.wrapper("verify_user", user: c.user));
 
     }else if(state == AppLifecycleState.inactive){
       // 应用进入非活动状态 , 如来了个电话 , 电话应用进入前台

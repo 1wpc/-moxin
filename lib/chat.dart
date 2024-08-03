@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_test/data.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
 import 'package:get/get.dart';
 
@@ -54,7 +55,8 @@ class ChatPageState extends State<StatefulWidget> {
 
   void init()async{
     Global.currentContactId = c.user.id;
-    Global.sp.send({"cmd": "get_public_key", "data": toUser.id});
+    //Global.sp.send({"cmd": "get_public_key", "data": toUser.id});
+    FlutterForegroundTask.sendDataToTask({"cmd": "get_public_key", "data": toUser.id});
     await Global.messageProvider.initCursorForPerson(toUser.id);
     if (c.messages.length<16){
       loadMessages();
@@ -101,7 +103,7 @@ class ChatPageState extends State<StatefulWidget> {
               }
               controller.addMsgShow(textMessage);
               Global.messageProvider.insert(textMessage);
-              Global.sp.send(Global.wrapper("send_msg", message: encryptTextmessage));
+              FlutterForegroundTask.sendDataToTask(Global.wrapper("send_msg", message: encryptTextmessage));
         },
       )
     );

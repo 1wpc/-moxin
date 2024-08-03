@@ -11,6 +11,8 @@ import 'package:get/get.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
+Isolate? _isolate;
+
 thread(sendPort)async{
   var rp = ReceivePort();
   sendPort.send(rp.sendPort);
@@ -33,7 +35,7 @@ thread(sendPort)async{
   }
   Future<void> connect(Map<String, dynamic> data)async{
     try{
-      socket = await Socket.connect("192.168.43.234", 8848,timeout: Duration(seconds: 10));
+      socket = await Socket.connect("120.46.131.50", 8848,timeout: Duration(seconds: 10));
       isconnect = true;
       socket.add(utf8.encode("${json.encode(data)}\n"));
       socket.flush();
@@ -87,7 +89,8 @@ thread(sendPort)async{
 
 startThread()async{
     Global.rp = ReceivePort();
-    await Isolate.spawn(thread, Global.rp.sendPort);
+    if (_isolate != null ) return;
+    _isolate = await Isolate.spawn(thread, Global.rp.sendPort, debugName: 'receiver');
 }
 
 @pragma('vm:entry-point')
@@ -98,7 +101,8 @@ void startCallback() {
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
-  startThread();
+  Global.rp = ReceivePort();
+  //startThread();
   Global.notif = NotificationUtility();
   await Global.notif.initialize();
   FlutterForegroundTask.initCommunicationPort();
@@ -140,34 +144,98 @@ class MyApp extends StatelessWidget {
 
 class MyTaskHandler extends TaskHandler {
   int _count = 0;
+  types.User user = types.User(id: "null0");
+  var clientId = "null0";
+  bool isconnect = false;
+  late Socket socket;
 
+  Future<void> receive()async {
+    try{
+      await for (var data in socket){
+        isconnect = true;
+        FlutterForegroundTask.sendDataToMain(utf8.decode(data));
+      }
+    }catch(e){
+      print("错误$e");
+      socket.close();
+      isconnect = false;
+    }
+  }
+  Future<void> connect(Map<String, dynamic> data)async{
+    try{
+      socket = await Socket.connect("120.46.131.50", 8848,timeout: Duration(seconds: 10));
+      isconnect = true;
+      socket.add(utf8.encode("${json.encode(data)}\n"));
+      socket.flush();
+      receive();
+      print("connect sucess");
+    }catch(e){
+      print("错误$e");
+      isconnect = false;
+    }
+  }
   // Called when the task is started.
   @override
-  void onStart(DateTime timestamp) {
+  void onStart(DateTime timestamp)async {
     print('onStart');
+    while (true){
+      await Future.delayed(Duration(milliseconds: 500));
+    }
   }
 
   // Called every [ForegroundTaskOptions.interval] milliseconds.
   @override
-  void onRepeatEvent(DateTime timestamp) {
+  void onRepeatEvent(DateTime timestamp) async{
     FlutterForegroundTask.updateService(notificationText: 'count: $_count');
-
-    // Send data to main isolate.
-    FlutterForegroundTask.sendDataToMain(_count);
-
     _count++;
+    print("isconnect=$isconnect, clientId=$clientId");
+    if (!isconnect && clientId != "null0"){
+      await connect(Global.wrapper("verify_user", user: user));
+    }
   }
 
   // Called when the task is destroyed.
   @override
   void onDestroy(DateTime timestamp) {
     print('onDestroy');
+    socket.close();
+    isconnect = false;
   }
 
   // Called when data is sent using [FlutterForegroundTask.sendDataToTask].
   @override
-  void onReceiveData(Object data) {
-    print('onReceiveData: $data');
+  void onReceiveData(dynamic msg) {
+    print('onReceiveData');
+    if(msg is String){
+      if (msg != "close"){
+      }else {
+        if(socket != null){
+          socket.close();
+        }
+        isconnect = false;
+      }
+    } else{
+      if (msg["cmd"] == "send_msg"){
+        if (isconnect){
+          socket.add(utf8.encode("${json.encode(Map<String, dynamic>.from(msg)["data"])}\n"));
+        }
+      }else if (msg["cmd"] == "init_user" || msg["cmd"] == "verify_user"){
+        var data = msg["data"];
+        Map<String, dynamic> user_map = Map<String, dynamic>.from(data);
+        user_map["metadata"] = Map<String, dynamic>.from(data["metadata"]);
+        user = types.User.fromJson(user_map);
+        clientId = user_map["id"];
+        print("clientId=$clientId");
+        if (!isconnect && clientId != "null0"){
+          print(4);
+          connect(Map<String, dynamic>.from(msg));
+        }
+      }else if (msg["cmd"] == "get_public_key"){
+        if (isconnect){
+          socket.add(utf8.encode("${json.encode(Map<String, dynamic>.from(msg))}\n"));
+        }
+      }
+    }
   }
 
   // Called when the notification button on the Android platform is pressed.
