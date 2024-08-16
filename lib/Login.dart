@@ -1,6 +1,8 @@
+import 'package:dart_sm/dart_sm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_test/SignUp.dart';
 import 'package:flutter_application_test/data.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:get/get.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
@@ -103,12 +105,19 @@ class _LoginState extends State<Login>{
             // 表单校验通过才会继续执行
             if ((_formKey.currentState as FormState).validate()) {
               (_formKey.currentState as FormState).save();
-              bool? delete = await showLoginConfirmDialog1();
-              if (delete == null) {
-                print("取消更改用户");
-              } else {
-                print("已确定更改用户");
-                c.updateUser("verify_user",types.User(id: _moxinId, metadata: {"password": _password}));
+              if (c.user.id != _moxinId) {
+                bool? delete = await showLoginConfirmDialog1();
+                if (delete == null) {
+                  print("取消更改用户");
+                } else {
+                  print("已确定更改用户");
+                  KeyPair kp = SM2.generateKeyPair();
+                  Global.privateKey = kp.privateKey;
+                  Global.preferences.setString("privateKey", kp.privateKey);
+                  c.updateUser("verify_user",types.User(id: _moxinId, metadata: {"password": _password, "publicKey": kp.publicKey}));
+                }
+              }else{
+                FlutterForegroundTask.sendDataToTask(Global.wrapper("verify_user", user: c.user));
               }
             }
           },

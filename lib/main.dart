@@ -148,14 +148,38 @@ class MyTaskHandler extends TaskHandler {
   var clientId = "null0";
   bool isconnect = false;
   late Socket socket;
+  int dogFood = 10;
 
   Future<void> receive()async {
     try{
       await for (var data in socket){
         isconnect = true;
-        FlutterForegroundTask.sendDataToMain(utf8.decode(data));
+        var data_map = json.decode(utf8.decode(data));
+        if (data_map["info"] == "feed_dog") {
+          dogFood = 10;
+        }else if (data_map["info"] == "normal"){
+          print("receive: ${data_map["data"]}");
+          _count = 0;
+          FlutterForegroundTask.sendDataToMain(data_map);
+        }else{
+          FlutterForegroundTask.sendDataToMain(data_map);
+        }
       }
     }catch(e){
+      print("错误$e");
+      socket.close();
+      isconnect = false;
+    }
+  }
+  Future feedServerDog()async{
+    try {
+      while (isconnect){
+        print("feed");
+        await Future.delayed(Duration(milliseconds: 500));
+        socket.add(utf8.encode("${jsonEncode({"info": "feed_dog"})}\n"));
+        socket.flush();
+      }
+    } on Exception catch (e) {
       print("错误$e");
       socket.close();
       isconnect = false;
@@ -164,10 +188,12 @@ class MyTaskHandler extends TaskHandler {
   Future<void> connect(Map<String, dynamic> data)async{
     try{
       socket = await Socket.connect("120.46.131.50", 8848,timeout: Duration(seconds: 10));
+      dogFood = 10;
       isconnect = true;
       socket.add(utf8.encode("${json.encode(data)}\n"));
       socket.flush();
       receive();
+      feedServerDog();
       print("connect sucess");
     }catch(e){
       print("错误$e");
@@ -176,18 +202,21 @@ class MyTaskHandler extends TaskHandler {
   }
   // Called when the task is started.
   @override
-  void onStart(DateTime timestamp)async {
+  void onStart(DateTime timestamp) {
     print('onStart');
-    while (true){
-      await Future.delayed(Duration(milliseconds: 500));
-    }
   }
 
   // Called every [ForegroundTaskOptions.interval] milliseconds.
   @override
   void onRepeatEvent(DateTime timestamp) async{
-    FlutterForegroundTask.updateService(notificationText: 'count: $_count');
+    FlutterForegroundTask.updateService(notificationText: 'count: $_count, isconnect: $isconnect, dogFood: $dogFood');
+    if (dogFood > 0){
+      dogFood--;
+    }
     _count++;
+    if (dogFood <= 0){
+      isconnect = false;
+    }
     print("isconnect=$isconnect, clientId=$clientId");
     if (!isconnect && clientId != "null0"){
       await connect(Global.wrapper("verify_user", user: user));
@@ -217,7 +246,10 @@ class MyTaskHandler extends TaskHandler {
     } else{
       if (msg["cmd"] == "send_msg"){
         if (isconnect){
+          print("send_msg!!");
           socket.add(utf8.encode("${json.encode(Map<String, dynamic>.from(msg)["data"])}\n"));
+        }else{
+          FlutterForegroundTask.sendDataToMain(jsonEncode({"info": "disconnect"}));
         }
       }else if (msg["cmd"] == "init_user" || msg["cmd"] == "verify_user"){
         var data = msg["data"];

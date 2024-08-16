@@ -9,6 +9,7 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:get/get.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Global {
@@ -80,11 +81,10 @@ class Global {
 }
   //static late File file_user;
 
-  //static Future<String> get _localPath async {
-    //final directory = await getApplicationDocumentsDirectory();
-
-    //return directory.path;
-  //}
+Future<String> get _localPath async {
+   final directory = await getApplicationDocumentsDirectory();
+   return directory.path;
+}
 
 
 String randomString() {

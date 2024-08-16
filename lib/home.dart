@@ -94,7 +94,7 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
         playSound: false,
       ),
       foregroundTaskOptions: const ForegroundTaskOptions(
-        interval: 5000,
+        interval: 500,
         isOnceEvent: false,
         autoRunOnBoot: true,
         autoRunOnMyPackageReplaced: true,
@@ -113,10 +113,23 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
         notificationText: 'Tap to return to the app',
         notificationIcon: null,
         notificationButtons: [
-          const NotificationButton(id: 'btn_hello', text: 'hello'),
+          const NotificationButton(id: 'btn_hello', text: 'pat'),
         ],
         callback: startCallback,
       );
+    }
+  }
+
+  Future initTask()async{
+    FlutterForegroundTask.addTaskDataCallback(_onReceiveTaskData);
+    if (!await FlutterForegroundTask.isRunningService) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Request permissions and initialize the service.
+        _requestPermissions();
+        _initService();
+        _startService();
+      });
+      FlutterForegroundTask.sendDataToTask(Global.wrapper("verify_user", user: c.user));
     }
   }
 
@@ -127,18 +140,10 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
     if (c.user.id == "null0"){
       EasyLoading.showInfo("请注册");
     }
-    FlutterForegroundTask.addTaskDataCallback(_onReceiveTaskData);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Request permissions and initialize the service.
-      _requestPermissions();
-      _initService();
-      _startService();
-    });
+    initTask();
   }
 
-  void _onReceiveTaskData(dynamic data) {
-    var data_map = json.decode(data);
+  void _onReceiveTaskData(dynamic data_map) {
     if(data_map["info"] == "normal"){
       var content = jsonDecode(data_map["data"]);
       if (content["metadata"]["isEncrypted"] == true){
@@ -176,6 +181,10 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
       Global.messageProvider.insert(msg);
     }else if (data_map["info"] == "success_verify"){
       EasyLoading.showSuccess("登录成功");
+      var returned_user_map = jsonDecode(Map<String, dynamic>.from(data_map)["return"]);
+      returned_user_map["metadata"] = jsonDecode(Map<String, dynamic>.from(returned_user_map)["metadata"]);
+      user = types.User.fromJson(returned_user_map);
+      Global.preferences.setString("user", jsonEncode(user.toJson()));
     }else if (data_map["info"] == "success_init"){
       EasyLoading.showSuccess("注册成功");
     }else if (data_map["info"] == "error_pw"){
@@ -189,6 +198,9 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
       var id = data_map["extra"];
       Global.contacts[id]["metadata"] = {"publicKey": publicKey};
       Global.save();
+    }else if (data_map["info"] == "disconnect"){
+      print("000000000000");
+      EasyLoading.showError("未连接服务器");
     }
   }
 

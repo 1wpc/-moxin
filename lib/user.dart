@@ -76,7 +76,7 @@ class UserState extends State<StatefulWidget>{
                   },
                   child: Text("保存修改")
               ),
-              Padding(padding: EdgeInsets.symmetric(horizontal: 20)),
+              Padding(padding: EdgeInsets.symmetric(horizontal: 10)),
               ElevatedButton(
                   onPressed: (){
                     if (!readonly){
@@ -91,7 +91,14 @@ class UserState extends State<StatefulWidget>{
                     });
                   },
                   child: Text(changeButtonText)
-              )
+              ),
+              Padding(padding: EdgeInsets.symmetric(horizontal: 10)),
+              ElevatedButton(
+                  onPressed: ()async{
+
+                  },
+                  child: Text("导出私钥")
+              ),
             ],
           ),
         ],
