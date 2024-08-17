@@ -46,11 +46,11 @@ class LoadingState extends State<StatefulWidget>{
         if (category[author_id] != null){
           msg["author"] = category[author_id];
           category.remove(author_id);
-          c.addMsgShow(types.TextMessage.fromJson(msg));
+          c.addMsgShow(types.TextMessage.fromJson(msg), false);
         }else if (category[friend_id] != null){
           msg["author"] = c.userProcessor(c.user).toJson();
           category.remove(friend_id);
-          c.addMsgShow(types.TextMessage.fromJson(msg));
+          c.addMsgShow(types.TextMessage.fromJson(msg), false);
         }
       }else{
         break;

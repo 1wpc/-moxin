@@ -126,8 +126,12 @@ class Controller extends GetxController{
     update();
   }
 
-  void addMsgShow(types.TextMessage msg){
-    messageshow.insert(0, msg);
+  void addMsgShow(types.TextMessage msg, [bool order = true]){
+    if (order){
+      messageshow.insert(0, msg);
+    }else{
+      messageshow.add(msg);
+    }
     update();
   }
 

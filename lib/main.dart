@@ -205,6 +205,7 @@ class MyTaskHandler extends TaskHandler {
     notif.initialize();
     var pref = await SharedPreferences.getInstance();
     privateKey = await pref.getString("privateKey") ?? "";
+    mp = MessageProvider();
     mp.open();
   }
 
