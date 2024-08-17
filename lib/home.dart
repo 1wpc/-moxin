@@ -145,15 +145,9 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
 
   void _onReceiveTaskData(dynamic data_map) {
     if(data_map["info"] == "normal"){
-      var content = jsonDecode(data_map["data"]);
-      if (content["metadata"]["isEncrypted"] == true){
-        var userName = content["author"]["firstName"];
-        content["author"]["firstName"] = SM2.decrypt(userName, Global.privateKey);
-        content["text"] = SM2.decrypt(content["text"], Global.privateKey);
-        content.remove("metadata");
-      }
+      var content = data_map["data"];
       var msg = types.TextMessage.fromJson(content);
-      Global.notif.showNotification(title: msg.author.firstName.toString(), body: msg.text);
+      //Global.notif.showNotification(title: msg.author.firstName.toString(), body: msg.text);
       c.addMsgBox(msg);
       var authorId = msg.author.id;//friend id
       if (Global.contacts[authorId] == null){
@@ -178,7 +172,7 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
       // if (authorId == Global.currentContactId){
       //   addMsg(msg);
       // }
-      Global.messageProvider.insert(msg);
+      // Global.messageProvider.insert(msg);
     }else if (data_map["info"] == "success_verify"){
       EasyLoading.showSuccess("登录成功");
       var returned_user_map = jsonDecode(Map<String, dynamic>.from(data_map)["return"]);
@@ -207,6 +201,7 @@ class MyHomePageState extends State<StatefulWidget> with WidgetsBindingObserver{
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    FlutterForegroundTask.removeTaskDataCallback(_onReceiveTaskData);
     super.dispose();
   }
 

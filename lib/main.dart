@@ -2,14 +2,17 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:dart_sm/dart_sm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_test/Loading.dart';
+import 'package:flutter_application_test/MessageProvider.dart';
 import 'package:flutter_application_test/NotificationUtility.dart';
 import 'package:flutter_application_test/data.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:get/get.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:shared_preferences/shared_preferences.dart';
 
 Isolate? _isolate;
 
@@ -119,21 +122,6 @@ class MyApp extends StatelessWidget {
       builder: EasyLoading.init(),
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
@@ -149,6 +137,9 @@ class MyTaskHandler extends TaskHandler {
   bool isconnect = false;
   late Socket socket;
   int dogFood = 10;
+  var notif = NotificationUtility();
+  String privateKey = "";
+  late MessageProvider mp;
 
   Future<void> receive()async {
     try{
@@ -160,6 +151,16 @@ class MyTaskHandler extends TaskHandler {
         }else if (data_map["info"] == "normal"){
           print("receive: ${data_map["data"]}");
           _count = 0;
+          var content = jsonDecode(data_map["data"]);
+          if (content["metadata"]["isEncrypted"] == true){
+            var userName = content["author"]["firstName"];
+            content["author"]["firstName"] = SM2.decrypt(userName, privateKey);
+            content["text"] = SM2.decrypt(content["text"], privateKey);
+            content.remove("metadata");
+          }
+          data_map["data"] = content;
+          notif.showNotification(title: content["author"]["firstName"].toString(), body: content["text"]);
+          mp.insert(types.TextMessage.fromJson(content));
           FlutterForegroundTask.sendDataToMain(data_map);
         }else{
           FlutterForegroundTask.sendDataToMain(data_map);
@@ -174,7 +175,6 @@ class MyTaskHandler extends TaskHandler {
   Future feedServerDog()async{
     try {
       while (isconnect){
-        print("feed");
         await Future.delayed(Duration(milliseconds: 500));
         socket.add(utf8.encode("${jsonEncode({"info": "feed_dog"})}\n"));
         socket.flush();
@@ -200,10 +200,19 @@ class MyTaskHandler extends TaskHandler {
       isconnect = false;
     }
   }
+
+  void init()async{
+    notif.initialize();
+    var pref = await SharedPreferences.getInstance();
+    privateKey = await pref.getString("privateKey") ?? "";
+    mp.open();
+  }
+
   // Called when the task is started.
   @override
   void onStart(DateTime timestamp) {
     print('onStart');
+    init();
   }
 
   // Called every [ForegroundTaskOptions.interval] milliseconds.
@@ -229,6 +238,7 @@ class MyTaskHandler extends TaskHandler {
     print('onDestroy');
     socket.close();
     isconnect = false;
+    mp.close();
   }
 
   // Called when data is sent using [FlutterForegroundTask.sendDataToTask].
